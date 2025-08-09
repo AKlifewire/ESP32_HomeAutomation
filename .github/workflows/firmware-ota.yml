@@ -1,0 +1,119 @@
+name: Firmware OTA Pipeline
+
+on:
+  push:
+    paths:
+      - 'src/**'
+      - 'platformio.ini'
+    branches:
+      - main
+      - develop
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'platformio.ini'
+
+env:
+  FIRMWARE_BUCKET: esp32-firmware-ota-1754784838.95337
+  BACKEND_API_URL: https://29krajp8ai.execute-api.us-east-1.amazonaws.com/prod
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install PlatformIO
+      run: |
+        python -m pip install --upgrade pip
+        pip install platformio
+        
+    - name: Extract firmware version
+      id: version
+      run: |
+        VERSION=$(grep '#define FIRMWARE_VERSION' src/secrets.h | cut -d'"' -f2)
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Firmware version: $VERSION"
+        
+    - name: Build firmware
+      run: |
+        pio run
+        
+    - name: Generate checksum
+      id: checksum
+      run: |
+        CHECKSUM=$(sha256sum .pio/build/esp32doit-devkit-v1/firmware.bin | cut -d' ' -f1)
+        echo "checksum=$CHECKSUM" >> $GITHUB_OUTPUT
+        echo "Firmware checksum: $CHECKSUM"
+        
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+        
+    - name: Upload firmware to S3
+      run: |
+        FIRMWARE_KEY="firmware/SmartHomeHub/v${{ steps.version.outputs.version }}/firmware.bin"
+        aws s3 cp .pio/build/esp32doit-devkit-v1/firmware.bin s3://$FIRMWARE_BUCKET/$FIRMWARE_KEY
+        echo "Uploaded to: s3://$FIRMWARE_BUCKET/$FIRMWARE_KEY"
+        
+    - name: Register firmware with backend
+      run: |
+        curl -X POST $BACKEND_API_URL/firmware-register \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${{ secrets.BACKEND_API_TOKEN }}" \
+          -d '{
+            "device_type": "SmartHomeHub",
+            "version": "${{ steps.version.outputs.version }}",
+            "checksum": "${{ steps.checksum.outputs.checksum }}",
+            "s3_url": "s3://${{ env.FIRMWARE_BUCKET }}/firmware/SmartHomeHub/v${{ steps.version.outputs.version }}/firmware.bin",
+            "build_info": {
+              "commit": "${{ github.sha }}",
+              "branch": "${{ github.ref_name }}",
+              "build_time": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+              "github_run": "${{ github.run_number }}"
+            },
+            "release_notes": "Automated build from commit ${{ github.sha }}"
+          }'
+          
+    - name: Create release (on main branch)
+      if: github.ref == 'refs/heads/main'
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ steps.version.outputs.version }}
+        release_name: SmartHomeHub v${{ steps.version.outputs.version }}
+        body: |
+          ## SmartHomeHub Firmware v${{ steps.version.outputs.version }}
+          
+          **Build Info:**
+          - Commit: ${{ github.sha }}
+          - Build Time: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+          - Checksum: ${{ steps.checksum.outputs.checksum }}
+          
+          **Changes:**
+          - Automated build from latest commit
+          
+          **OTA Deployment:**
+          - Firmware uploaded to S3
+          - Backend notified for canary rollout
+          - Monitor device telemetry for rollout status
+        draft: false
+        prerelease: false
+        
+    - name: Upload firmware artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: firmware-v${{ steps.version.outputs.version }}
+        path: .pio/build/esp32doit-devkit-v1/firmware.bin
+        retention-days: 30
