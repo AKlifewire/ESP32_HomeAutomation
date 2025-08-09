@@ -2,7 +2,7 @@
 #define SECRETS_H
 
 // ================== FIRMWARE VERSION ==================
-#define FIRMWARE_VERSION "1.6.4"
+#define FIRMWARE_VERSION "1.6.5"
 #define BUILD_TIMESTAMP __DATE__ " " __TIME__
 
 // ================== DEVICE CONFIG ==================

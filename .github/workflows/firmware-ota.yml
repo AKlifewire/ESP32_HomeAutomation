@@ -53,37 +53,12 @@ jobs:
         echo "checksum=$CHECKSUM" >> $GITHUB_OUTPUT
         echo "Firmware checksum: $CHECKSUM"
         
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1
-        
-    - name: Upload firmware to S3
+    - name: Show firmware info
       run: |
-        FIRMWARE_KEY="firmware/SmartHomeHub/v${{ steps.version.outputs.version }}/firmware.bin"
-        aws s3 cp .pio/build/esp32doit-devkit-v1/firmware.bin s3://$FIRMWARE_BUCKET/$FIRMWARE_KEY
-        echo "Uploaded to: s3://$FIRMWARE_BUCKET/$FIRMWARE_KEY"
-        
-    - name: Register firmware with backend
-      run: |
-        curl -X POST $BACKEND_API_URL/firmware-register \
-          -H "Content-Type: application/json" \
-          -H "Authorization: Bearer ${{ secrets.BACKEND_API_TOKEN }}" \
-          -d '{
-            "device_type": "SmartHomeHub",
-            "version": "${{ steps.version.outputs.version }}",
-            "checksum": "${{ steps.checksum.outputs.checksum }}",
-            "s3_url": "s3://${{ env.FIRMWARE_BUCKET }}/firmware/SmartHomeHub/v${{ steps.version.outputs.version }}/firmware.bin",
-            "build_info": {
-              "commit": "${{ github.sha }}",
-              "branch": "${{ github.ref_name }}",
-              "build_time": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-              "github_run": "${{ github.run_number }}"
-            },
-            "release_notes": "Automated build from commit ${{ github.sha }}"
-          }'
+        echo "Firmware built successfully!"
+        echo "Version: ${{ steps.version.outputs.version }}"
+        echo "Checksum: ${{ steps.checksum.outputs.checksum }}"
+        echo "File size: $(stat -c%s .pio/build/esp32doit-devkit-v1/firmware.bin) bytes"
           
     - name: Create release (on main branch)
       if: github.ref == 'refs/heads/main'
