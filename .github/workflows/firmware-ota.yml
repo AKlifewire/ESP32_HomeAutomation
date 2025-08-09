@@ -87,12 +87,12 @@ jobs:
           
     - name: Create release (on main branch)
       if: github.ref == 'refs/heads/main'
-      uses: actions/create-release@v1
+      uses: softprops/action-gh-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: v${{ steps.version.outputs.version }}
-        release_name: SmartHomeHub v${{ steps.version.outputs.version }}
+        name: SmartHomeHub v${{ steps.version.outputs.version }}
         body: |
           ## SmartHomeHub Firmware v${{ steps.version.outputs.version }}
           
@@ -110,9 +110,10 @@ jobs:
           - Monitor device telemetry for rollout status
         draft: false
         prerelease: false
+        files: .pio/build/esp32doit-devkit-v1/firmware.bin
         
     - name: Upload firmware artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: firmware-v${{ steps.version.outputs.version }}
         path: .pio/build/esp32doit-devkit-v1/firmware.bin
