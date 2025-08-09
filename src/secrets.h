@@ -2,7 +2,7 @@
 #define SECRETS_H
 
 // ================== FIRMWARE VERSION ==================
-#define FIRMWARE_VERSION "1.6.2"
+#define FIRMWARE_VERSION "1.6.3"
 #define BUILD_TIMESTAMP __DATE__ " " __TIME__
 
 // ================== DEVICE CONFIG ==================
@@ -19,10 +19,10 @@ const char AWS_ENDPOINT[] = "a3rbu1pildf8jg-ats.iot.us-east-1.amazonaws.com";
 const int AWS_PORT = 8883;
 
 // ================== MQTT TOPICS ==================
-String controlTopic = "hub-346570/digital/control";
-String statusTopic = "hub-346570/digital/status";
-String telemetryTopic = "devices/hub-346570/telemetry";
-String bootTopic = "devices/hub-346570/boot";
+const char* controlTopic = "hub-346570/digital/control";
+const char* statusTopic = "hub-346570/digital/status";
+const char* telemetryTopic = "devices/hub-346570/telemetry";
+const char* bootTopic = "devices/hub-346570/boot";
 
 // ================== DEVICE CERTIFICATE ==================
 const char CLAIM_CERT[] PROGMEM = R"EOF(
