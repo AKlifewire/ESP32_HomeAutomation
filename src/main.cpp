@@ -1,14 +1,11 @@
-#include <WiFi.h>
-#include "secrets.h"
+#include <Arduino.h>
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("SmartHomeHub v" + String(FIRMWARE_VERSION) + " starting...");
-  Serial.println("Device ID: " + String(DEVICE_ID));
-  Serial.println("Build: " + String(BUILD_TIMESTAMP));
+  Serial.println("ESP32 Firmware v1.6.4");
 }
 
 void loop() {
-  Serial.println("Running firmware v" + String(FIRMWARE_VERSION));
-  delay(10000);
+  Serial.println("Running...");
+  delay(5000);
 }
