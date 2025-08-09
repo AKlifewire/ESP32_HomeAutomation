@@ -49,7 +49,7 @@ jobs:
     - name: Generate checksum
       id: checksum
       run: |
-        CHECKSUM=$(sha256sum .pio/build/esp32doit-devkit-v1/firmware.bin | cut -d' ' -f1)
+        CHECKSUM=$(sha256sum .pio/build/esp32dev/firmware.bin | cut -d' ' -f1)
         echo "checksum=$CHECKSUM" >> $GITHUB_OUTPUT
         echo "Firmware checksum: $CHECKSUM"
         
@@ -58,7 +58,7 @@ jobs:
         echo "Firmware built successfully!"
         echo "Version: ${{ steps.version.outputs.version }}"
         echo "Checksum: ${{ steps.checksum.outputs.checksum }}"
-        echo "File size: $(stat -c%s .pio/build/esp32doit-devkit-v1/firmware.bin) bytes"
+        echo "File size: $(stat -c%s .pio/build/esp32dev/firmware.bin) bytes"
           
     - name: Create release (on main branch)
       if: github.ref == 'refs/heads/main'
@@ -85,11 +85,11 @@ jobs:
           - Monitor device telemetry for rollout status
         draft: false
         prerelease: false
-        files: .pio/build/esp32doit-devkit-v1/firmware.bin
+        files: .pio/build/esp32dev/firmware.bin
         
     - name: Upload firmware artifact
       uses: actions/upload-artifact@v4
       with:
         name: firmware-v${{ steps.version.outputs.version }}
-        path: .pio/build/esp32doit-devkit-v1/firmware.bin
+        path: .pio/build/esp32dev/firmware.bin
         retention-days: 30
